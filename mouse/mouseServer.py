@@ -1,5 +1,6 @@
 import socket
 import msgpack
+import ctypes
 
 from pynput import mouse
 
@@ -7,6 +8,19 @@ from pynput import mouse
 def create_udp_socket(ip, port):
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return udp_socket
+
+# 发送主控端显示分辨率
+def getScreen():
+    # 获取当前屏幕分辨率
+    user32 = ctypes.windll.user32
+    width, height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+    event = {
+        'type': 'Screen',
+        'width': width,
+        'height': height,
+    }
+    event_msgpack = msgpack.packb(event, use_bin_type=True)
+    udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
 
 # 发送鼠标移动事件
 def on_move(x, y):
@@ -68,7 +82,7 @@ if __name__ == "__main__":
 
     # 创建UDP套接字
     udp_socket = create_udp_socket(remote_ip, remote_port)
-
+    getScreen() # 发送分辨率
     try:
         # 使用多线程或异步编程来运行鼠标事件捕获函数，以使操作不间断
         import threading
