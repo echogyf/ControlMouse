@@ -21,7 +21,8 @@ def send_mouse_event(udp_socket, event_data, remote_ip, remote_port):
 
 # 发送鼠标点击事件
 def on_click(x, y, button, pressed):
-    event_type = 'mouse_click' if pressed else 'mouse_release'
+    event_type = "Pressed" if pressed else "Release"
+    print(f"点击右键" if button == "Button.right" else "点击左键")
     event = {
         'type': event_type,
         'x': x,
@@ -54,9 +55,14 @@ def capture_and_send_mouse_events(udp_socket, remote_ip, remote_port):
 
         time.sleep(0.1)  # 控制事件发送频率（单位：秒）
 
+def capture_and_send_click_mouse_events(udp_socket, remote_ip, remote_port):
+    with mouse.Listener(on_click=on_click) as listener:
+        listener.join()
+
 # 主函数
 if __name__ == "__main__":
-    remote_ip = '192.168.56.134'
+    # remote_ip = '192.168.56.134'
+    remote_ip = '172.31.110.236'
     # remote_ip = '172.31.110.64'
     remote_port = 12345  # 与被控端相同的端口
 
@@ -67,11 +73,12 @@ if __name__ == "__main__":
         # 使用多线程或异步编程来运行鼠标事件捕获函数，以使操作不间断
         import threading
 
-        mouse_thread = threading.Thread(target=capture_and_send_mouse_events, args=(udp_socket, remote_ip, remote_port))
-        mouse_thread.start()
-        mouse_thread.join()
-        with mouse.Listener(on_click=on_click) as listener:
-            listener.join()
+        mouse_move_thread = threading.Thread(target=capture_and_send_mouse_events, args=(udp_socket, remote_ip, remote_port))
+        mouse_click_thread = threading.Thread(target=capture_and_send_click_mouse_events, args=(udp_socket, remote_ip, remote_port))
+        mouse_move_thread.start()
+        mouse_click_thread.start()
+        mouse_move_thread.join()
+        mouse_click_thread.join()
     except KeyboardInterrupt:
         print("连接已断开。")
     finally:

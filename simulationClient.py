@@ -3,7 +3,6 @@ import msgpack
 import time
 
 import pyautogui
-import mouse
 
 # 创建与主控端的UDP套接字
 def create_udp_socket(ip, port):
@@ -25,7 +24,7 @@ def receive_and_process_events(udp_socket):
             unpacker.feed(data)
 
             for event_data in unpacker:
-                event = event_data  # 不需要再次解包，因为数据已经解包过
+                event = event_data
 
                 if event['type'] == 'mouse':
                     count = event['data']['count']
@@ -33,14 +32,15 @@ def receive_and_process_events(udp_socket):
                     print('count:' + str(count).rjust(2) + '  X:' + str(x).rjust(2) + '  Y:' + str(y).rjust(2))
                     pyautogui.moveTo(x, y, duration=0.1)
 
-                elif event['type'] == 'click':
+                elif event['type'] == "Pressed":
                     button = event['button']
-                    x, y = event['x'], event['y']
-                    print(f'Received {button} click at X:{x} Y:{y}')
-                    if button == 'left':
-                        pyautogui.click(x, y, button='left')
-                    elif button == 'right':
-                        pyautogui.click(x, y, button='right')
+                    # x, y = event['data']['x'], event['data']['y']
+                    if button == 'Button.left':
+                        pyautogui.click(button='left')
+                        print(f"点击鼠标左键")
+                    elif button == 'Button.right':
+                        pyautogui.click(button='right')
+                        print(f"点击鼠标右键")
 
                 event_counter += 1
 
@@ -54,6 +54,7 @@ def receive_and_process_events(udp_socket):
     finally:
         # 不需要关闭UDP套接字
         pass
+
 # 主函数
 if __name__ == "__main__":
     local_ip = '0.0.0.0'  # 监听所有可用接口
