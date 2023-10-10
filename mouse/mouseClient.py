@@ -35,8 +35,8 @@ def receive_and_process_events(udp_socket):
                     host_width, host_height = event['width'], event['height']
                     print(f'主控端分辨率{host_width}，{host_height}')
                 elif event['type'] == 'Move':
-                    x, y = event['x'], event['y']
-                    control.position = (x * int(controlled_width) / int(host_width), y * int(controlled_height) / int(host_height))
+                    x, y = event['x'] * int(controlled_width) / int(host_width), event['y'] * int(controlled_height) / int(host_height)
+                    control.position = (x, y)
                     print(f'X: {x}  Y: {y}')
 
                 elif event['type'] == "Pressed":
