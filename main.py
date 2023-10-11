@@ -162,7 +162,7 @@ def receive_and_process_events(udp_socket):
                 elif event['type'] == 'Move':
                     x, y = event['x'] * int(controlled_width) / int(host_width), event['y'] * int(controlled_height) / int(host_height)
                     control1.position = (x, y)
-                    print(f'X: {x}  Y: {y}')
+                    print(f'X: {x:.0f}  Y: {y:.0f}')
 
                 elif event['type'] == "Pressed":
                     button = event['button']
