@@ -280,7 +280,6 @@ if __name__ == "__main__":
 
         # 创建UDP套接字
         udp_socket = create_mian_udp_socket(remote_ip, remote_port)
-        getScreen()  # 发送分辨率
         try:
             # 使用多线程或异步编程来运行鼠标事件捕获函数，以使操作不间断
             import threading
