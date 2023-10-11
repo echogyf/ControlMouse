@@ -4,6 +4,48 @@ import msgpack
 from pynput import keyboard
 from pynput.keyboard import Key
 
+# 创建与主控端的UDP套接字
+def create_udp_socket(ip, port):
+    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp_socket.bind((ip, port))
+    print(f"等待连接到 {ip}:{port}...")
+    return udp_socket
+
+
+# 接收和处理事件
+def receive_and_process_events(udp_socket):
+    try:
+        while True:
+            data, _ = udp_socket.recvfrom(1024)  # 接收数据包
+            unpacker = msgpack.Unpacker(raw=False)
+            unpacker.feed(data)
+
+            control = keyboard.Controller()  # 获取键盘操控对象
+
+            for event_data in unpacker:
+                event = event_data
+
+                if event['type'] == 'Keyboard':
+                    if event['statue'] == 'pressed':
+                        key = event['key']
+                        if key in special_keys:
+                            key = special_keys[key]
+                        control.press(key)
+                        print(f'按下 {key}')
+
+                    elif event['statue'] == 'released':
+                        key = event['key']
+                        if key in special_keys:
+                            key = special_keys[key]
+                        control.release(key)
+                        print(f'松开 {key}')
+
+    except KeyboardInterrupt:
+        print("连接已断开.")
+    finally:
+        # 不需要关闭UDP套接字
+        pass
+
 special_keys = {
     'Key.shift': Key.shift,
     'Key.shift_l': Key.shift_l,
@@ -52,49 +94,6 @@ special_keys = {
     'Key.num_lock': Key.num_lock,
     'Key.menu': Key.menu
 }
-
-# 创建与主控端的UDP套接字
-def create_udp_socket(ip, port):
-    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    udp_socket.bind((ip, port))
-    print(f"等待连接到 {ip}:{port}...")
-    return udp_socket
-
-
-# 接收和处理事件
-def receive_and_process_events(udp_socket):
-    try:
-        while True:
-            data, _ = udp_socket.recvfrom(1024)  # 接收数据包
-            unpacker = msgpack.Unpacker(raw=False)
-            unpacker.feed(data)
-
-            control = keyboard.Controller()  # 获取键盘操控对象
-
-            for event_data in unpacker:
-                event = event_data
-
-                if event['type'] == 'Keyboard':
-                    if event['statue'] == 'pressed':
-                        key = event['key']
-                        if key in special_keys:
-                            key = special_keys[key]
-                        control.press(key)
-                        print(f'按下 {key}')
-
-                    elif event['statue'] == 'released':
-                        key = event['key']
-                        if key in special_keys:
-                            key = special_keys[key]
-                        control.release(key)
-                        print(f'松开 {key}')
-
-    except KeyboardInterrupt:
-        print("连接已断开.")
-    finally:
-        # 不需要关闭UDP套接字
-        pass
-
 
 # 主函数
 if __name__ == "__main__":
