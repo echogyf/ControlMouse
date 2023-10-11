@@ -6,8 +6,10 @@ from pynput.keyboard import Key
 
 special_keys = {
     'Key.shift': Key.shift,
+    'Key.shift_l': Key.shift_l,
     'Key.shift_r': Key.shift_r,
     'Key.esc': Key.esc,
+    'Key.space': Key.space,
     'Key.f1': Key.f1,
     'Key.f2': Key.f2,
     'Key.f3': Key.f3,
@@ -21,12 +23,17 @@ special_keys = {
     'Key.f11': Key.f11,
     'Key.f12': Key.f12,
     'Key.delete': Key.delete,
+    'Key.ctrl': Key.ctrl,
     'Key.ctrl_l': Key.ctrl_l,
     'Key.ctrl_r': Key.ctrl_r,
     'Key.tab': Key.tab,
     'Key.caps_lock': Key.caps_lock,
     'Key.cmd': Key.cmd,
+    'Key.cmd_r': Key.cmd_r,
+    'Key.cmd_l': Key.cmd_l,
+    'Key.alt': Key.alt,
     'Key.alt_l': Key.alt_l,
+    'Key.alt_r': Key.alt_r,
     'Key.alt_gr': Key.alt_gr,
     'Key.up': Key.up,
     'Key.down': Key.down,
@@ -40,7 +47,10 @@ special_keys = {
     'Key.page_down': Key.page_down,
     'Key.pause': Key.pause,
     'Key.insert': Key.insert,
-    'Key.print_screen': Key.print_screen
+    'Key.print_screen': Key.print_screen,
+    'Key.scroll_lock': Key.scroll_lock,
+    'Key.num_lock': Key.num_lock,
+    'Key.menu': Key.menu
 }
 
 # 创建与主控端的UDP套接字
