@@ -75,9 +75,9 @@ def capture_and_send_click_mouse_events(udp_socket, remote_ip, remote_port):
 
 # 主函数
 if __name__ == "__main__":
-    remote_ip = '192.168.56.134' # 虚拟机
+    # remote_ip = '192.168.56.134' # 虚拟机
     # remote_ip = '172.31.110.236' # 本机
-    # remote_ip = '172.31.110.64' # 笔记本
+    remote_ip = '172.31.110.64' # 笔记本
     remote_port = 12345  # 与被控端相同的端口
 
     # 创建UDP套接字
