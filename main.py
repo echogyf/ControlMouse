@@ -1,4 +1,7 @@
 import socket
+import sys
+import time
+
 import msgpack
 import ctypes
 import threading
@@ -7,11 +10,13 @@ from pynput import mouse
 from pynput import keyboard
 from pynput.keyboard import Key
 
-# 主控端代码
+
+# #######################################################主控端代码#######################################################
 # 创建与被控端的UDP套接字
 def create_mian_udp_socket(ip, port):
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return udp_socket
+
 
 # 发送主控端显示分辨率
 def getScreen():
@@ -29,8 +34,8 @@ def getScreen():
         event_get_screen.set()  # 设置event_get_screen，表示已经获取屏幕分辨率
     except Exception as e:
         print(f"发生异常：{e}")
-        # 在发生异常时也要确保event_get_screen被设置，以便程序能继续执行
         event_get_screen.set()
+
 
 # 发送鼠标移动事件
 def on_move(x, y):
@@ -42,6 +47,7 @@ def on_move(x, y):
     print(f'X: {x}  Y: {y}')
     event_msgpack = msgpack.packb(event, use_bin_type=True)
     udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+
 
 # 发送鼠标点击事件
 def on_click(x, y, button, pressed):
@@ -58,6 +64,7 @@ def on_click(x, y, button, pressed):
     }
     event_msgpack = msgpack.packb(event, use_bin_type=True)
     udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+
 
 # 发送鼠标滚轮事件
 def on_scroll(x, y, dx, dy):
@@ -79,29 +86,34 @@ def on_scroll(x, y, dx, dy):
     event_msgpack = msgpack.packb(event, use_bin_type=True)
     udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
 
-def capture_and_send_click_mouse_events(udp_socket, remote_ip, remote_port):
-    event_get_screen.wait()  # 等待event_get_screen，确保getScreen已经执行
-    with mouse.Listener(on_click=on_click, on_move=on_move, on_scroll=on_scroll) as listener:
-        listener.join()
 
 # 发送键盘按压事件
 def on_press(key):
-    try:
-        key_char = key.char  # 获取按键的字符表示形式
-        key_type = 'char'
-    except AttributeError:
-        key_char = str(key)  # 如果按键没有字符表示形式，将其转换为字符串
-        key_type = 'special'
+    global exit_program
+    if key == Key.esc:
+        event = {
+            'type': 'Exit'
+        }
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        exit_program = True
+    else:
+        try:
+            key_char = key.char  # 获取按键的字符表示形式
+            key_type = 'char'
+        except AttributeError:
+            key_char = str(key)  # 如果按键没有字符表示形式，将其转换为字符串
+            key_type = 'special'
 
-    event = {
-        'type': 'Keyboard',
-        'statue': 'pressed',
-        'keyType': key_type,
-        'key': key_char
-    }
-    print('{0} 按下'.format(key_char))
-    event_msgpack = msgpack.packb(event, use_bin_type=True)
-    udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        event = {
+            'type': 'Keyboard',
+            'statue': 'pressed',
+            'keyType': key_type,
+            'key': key_char
+        }
+        print('{0} 按下'.format(key_char))
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
 
 
 # 发送键盘松开事件
@@ -124,9 +136,6 @@ def on_release(key):
     udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
 
 
-def capture_and_send_keyboard_events(udp_socket, remote_ip, remote_port):
-    with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
-        listener.join()
 # ----------------------------------------------------------------------------------------------------------------------
 # 被控端代码
 # 创建与主控端的UDP套接字
@@ -156,11 +165,16 @@ def receive_and_process_events(udp_socket):
             for event_data in unpacker:
                 event = event_data
 
+                if event['type'] == 'Exit':
+                    print("程序退出")
+                    time.sleep(1)
+                    sys.exit(0)
                 if event['type'] == 'Screen':
                     host_width, host_height = event['width'], event['height']
                     print(f'主控端分辨率{host_width}，{host_height}')
                 elif event['type'] == 'Move':
-                    x, y = event['x'] * int(controlled_width) / int(host_width), event['y'] * int(controlled_height) / int(host_height)
+                    x, y = event['x'] * int(controlled_width) / int(host_width), event['y'] * int(
+                        controlled_height) / int(host_height)
                     control1.position = (x, y)
                     print(f'X: {x:.0f}  Y: {y:.0f}')
 
@@ -217,6 +231,7 @@ def receive_and_process_events(udp_socket):
         # 不需要关闭UDP套接字
         pass
 
+
 special_keys = {
     'Key.shift': Key.shift,
     'Key.shift_l': Key.shift_l,
@@ -268,8 +283,9 @@ special_keys = {
 
 # 主函数
 if __name__ == "__main__":
-    choice = input("输入1为主控端，输入2为被控端: ")
+    choice = input("输入1为主控端，输入2为被控端:\n")
     if choice == "1":
+        exit_program = False
         remote_ip = '192.168.56.134'  # 虚拟机
         # remote_ip = '172.31.110.236' # 本机
         # remote_ip = '172.31.110.64' # 笔记本
@@ -277,22 +293,27 @@ if __name__ == "__main__":
 
         event_get_screen = threading.Event()
         event_capture_mouse = threading.Event()
+        exit_event = threading.Event()
 
         # 创建UDP套接字
         udp_socket = create_mian_udp_socket(remote_ip, remote_port)
         try:
-            # 使用多线程或异步编程来运行鼠标事件捕获函数，以使操作不间断
-            import threading
+            # 连接事件以及释放
+            getScreen()
+            mouse_listener = mouse.Listener(on_click=on_click, on_move=on_move, on_scroll=on_scroll)
+            key_listener = keyboard.Listener(on_press=on_press, on_release=on_release, suppress=True)
+            # 启动监听线程
+            mouse_listener.start()
+            key_listener.start()
+            print(exit_program)
+            while True:
+                if exit_program:
+                    mouse_listener.stop()
+                    key_listener.stop()
+                    print("程序退出")
+                    time.sleep(1)
+                    sys.exit(0)
 
-            get_screen_thread = threading.Thread(target=getScreen)
-            get_screen_thread.start()
-            mouse_click_thread = threading.Thread(target=capture_and_send_click_mouse_events,args=(udp_socket, remote_ip, remote_port))
-            keyboard_thread = threading.Thread(target=capture_and_send_keyboard_events,args=(udp_socket, remote_ip, remote_port))
-            mouse_click_thread.start()
-            keyboard_thread.start()
-            get_screen_thread.join()
-            mouse_click_thread.join()
-            keyboard_thread.join()
         except KeyboardInterrupt:
             print("连接已断开。")
         finally:
