@@ -89,8 +89,8 @@ def on_scroll(x, y, dx, dy):
 
 # 发送键盘按压事件
 def on_press(key):
-    global exit_program
-    if key == Key.esc:
+    global exit_program, cmd_press
+    if key == Key.esc and cmd_press:
         event = {
             'type': 'Exit'
         }
@@ -104,7 +104,10 @@ def on_press(key):
         except AttributeError:
             key_char = str(key)  # 如果按键没有字符表示形式，将其转换为字符串
             key_type = 'special'
-
+        if key == Key.cmd:
+            cmd_press = True
+        else:
+            cmd_press = False
         event = {
             'type': 'Keyboard',
             'statue': 'pressed',
@@ -286,6 +289,7 @@ if __name__ == "__main__":
     choice = input("输入1为主控端，输入2为被控端:\n")
     if choice == "1":
         exit_program = False
+        cmd_press = False
         remote_ip = '192.168.56.134'  # 虚拟机
         # remote_ip = '172.31.110.236' # 本机
         # remote_ip = '172.31.110.64' # 笔记本
