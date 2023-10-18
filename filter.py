@@ -37,65 +37,112 @@ def getScreen():
         event_get_screen.set()
 
 
-# 发送鼠标移动事件
-def on_move(x, y):
-    event = {
-        'type': 'Move',
-        'x': x,
-        'y': y,
-    }
-    print(f'X: {x}  Y: {y}')
-    event_msgpack = msgpack.packb(event, use_bin_type=True)
-    udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-
-
-# 发送鼠标点击事件
-def on_click(x, y, button, pressed):
-    event_type = "Pressed" if pressed else "Release"
-    if event_type == "Pressed":
-        if button == "Button.right":
-            print(f'按下右键')
-        if button == "Button.left":
-            print(f'按下左键')
-        if button == "Button.middle":
-            print(f'按下中键')
-    elif event_type == "Release":
-        if button == "Button.right":
-            print(f'按下右键')
-        if button == "Button.left":
-            print(f'按下左键')
-        if button == "Button.middle":
-            print(f'按下中键')
-    event = {
-        'type': event_type,
-        'x': x,
-        'y': y,
-        'button': str(button)
-    }
-    event_msgpack = msgpack.packb(event, use_bin_type=True)
-    udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-
-
-# 发送鼠标滚轮事件
-def on_scroll(x, y, dx, dy):
-    event = {
-        'type': 'Scroll',
-        'x': x,
-        'y': y,
-        'dx': dx,
-        'dy': dy
-    }
-    if dy < 0:
-        print(f'鼠标滚轮向下滚动 {dy}')
-    elif dy > 0:
-        print(f'鼠标滚轮向上滚动 {dy}')
-    elif dx < 0:
-        print(f'鼠标滚轮向右滚动 {dx}')
-    elif dx > 0:
-        print(f'鼠标滚轮向左滚动 {dx}')
-    event_msgpack = msgpack.packb(event, use_bin_type=True)
-    udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-
+def win32_event_filter(msg, data):
+    if msg == 512:
+        event = {
+            'type': 'Move',
+            'x': data.pt.x,
+            'y': data.pt.y,
+        }
+        print(f'X: {data.pt.x}  Y: {data.pt.y}')
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+    elif msg == 513:
+        event = {
+            'type': "Pressed",
+            'button': "Button.left"
+        }
+        print(f'鼠标左键按下')
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        mouse_listener.suppress_event()
+    elif msg == 514:
+        event = {
+            'type': "Release",
+            'button': "Button.left"
+        }
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        print(f'鼠标左键抬起')
+        mouse_listener.suppress_event()
+    elif msg == 516:
+        event = {
+            'type': "Pressed",
+            'button': "Button.right"
+        }
+        print(f'鼠标右键按下')
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        mouse_listener.suppress_event()
+    elif msg == 517:
+        event = {
+            'type': "Release",
+            'button': "Button.right"
+        }
+        print(f'鼠标右键抬起')
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        mouse_listener.suppress_event()
+    elif msg == 519:
+        event = {
+            'type': "Pressed",
+            'button': "Button.middle"
+        }
+        print(f'鼠标中键按下')
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        mouse_listener.suppress_event()
+    elif msg == 520:
+        event = {
+            'type': "Release",
+            'button': "Button.middle"
+        }
+        print(f'鼠标中键抬起')
+        event_msgpack = msgpack.packb(event, use_bin_type=True)
+        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        mouse_listener.suppress_event()
+    elif msg == 522:
+        if data.mouseData == 4287102976:
+            event = {
+                'type': 'Scroll',
+                'dx': 0,
+                'dy': -1
+            }
+            print(f'滚轮向下')
+            event_msgpack = msgpack.packb(event, use_bin_type=True)
+            udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        elif data.mouseData == 7864320:
+            event = {
+                'type': 'Scroll',
+                'dx': 0,
+                'dy': 1
+            }
+            print(f'滚轮向上')
+            event_msgpack = msgpack.packb(event, use_bin_type=True)
+            udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        mouse_listener.suppress_event()
+    elif msg == 526:
+        if data.mouseData <= 15728640:
+            event = {
+                'type': 'Scroll',
+                'dx': 1,
+                'dy': 0
+            }
+            print(f'滚轮向左')
+            event_msgpack = msgpack.packb(event, use_bin_type=True)
+            udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        elif data.mouseData >= 4271374336:
+            event = {
+                'type': 'Scroll',
+                'dx': -1,
+                'dy': 0
+            }
+            print(f'滚轮向右')
+            event_msgpack = msgpack.packb(event, use_bin_type=True)
+            udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
+        mouse_listener.suppress_event()
+    else:  # 其他一律拦截
+        mouse_listener.suppress_event()
 
 # 发送键盘按压事件
 def on_press(key):
@@ -180,6 +227,7 @@ def receive_and_process_events(udp_socket):
 
                 if event['type'] == 'Exit':
                     print("程序退出")
+                    control2.release(Key.cmd)
                     time.sleep(1)
                     sys.exit(0)
                 if event['type'] == 'Screen':
@@ -199,6 +247,9 @@ def receive_and_process_events(udp_socket):
                     elif button == 'Button.right':
                         control1.press(mouse.Button.right)
                         print(f"按下鼠标右键")
+                    elif button == 'Button.middle':
+                        control1.press(mouse.Button.middle)
+                        print(f"按下鼠标中键")
 
                 elif event['type'] == "Release":
                     button = event['button']
@@ -208,6 +259,9 @@ def receive_and_process_events(udp_socket):
                     elif button == 'Button.right':
                         control1.release(mouse.Button.right)
                         print(f"松开鼠标右键")
+                    elif button == 'Button.middle':
+                        control1.release(mouse.Button.middle)
+                        print(f"松开鼠标中键")
 
                 elif event['type'] == "Scroll":
                     dx, dy = event['dx'], event['dy']
@@ -314,7 +368,7 @@ if __name__ == "__main__":
         try:
             # 连接事件以及释放
             getScreen()
-            mouse_listener = mouse.Listener(on_click=on_click, on_move=on_move, on_scroll=on_scroll)
+            mouse_listener = mouse.Listener(win32_event_filter=win32_event_filter)
             key_listener = keyboard.Listener(on_press=on_press, on_release=on_release, suppress=True)
             # 启动监听线程
             mouse_listener.start()
