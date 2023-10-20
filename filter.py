@@ -1,4 +1,8 @@
 import socket
+
+import win32con
+import win32console
+import win32gui
 import sys
 import time
 
@@ -38,116 +42,69 @@ def getScreen():
 
 
 def win32_event_filter(msg, data):
-    if msg == 512:
+    if msg in mouse_mapping:
+        event_type, button = mouse_mapping[msg]
         event = {
-            'type': 'Move',
-            'x': data.pt.x,
-            'y': data.pt.y,
+            'type': event_type,
+            'button': button
         }
-        print(f'X: {data.pt.x}  Y: {data.pt.y}')
+
+        if event_type == 'Move':
+            event['x'] = data.pt.x
+            event['y'] = data.pt.y
+
+        if event_type == 'Scroll' and button == 'column':
+            if data.mouseData == 4287102976:
+                event['dx'] = 0
+                event['dy'] = -1
+                # print(f'滚轮向下')
+            elif data.mouseData == 7864320:
+                event['dx'] = 0
+                event['dy'] = 1
+                # print(f'滚轮向上')
+
+        if event_type == 'Scroll' and button == 'row':
+            if data.mouseData <= 629145600:
+                event['dx'] = 1
+                event['dy'] = 0
+                # print(f'滚轮向左')
+            elif data.mouseData >= 3390570496:
+                event['dx'] = -1
+                event['dy'] = 0
+                # print(f'滚轮向右')
+        # print(f'X: {data.pt.x}  Y: {data.pt.y}' if event_type == 'Move' else f'鼠标{button} {event_type}')
+        # print(event)
         event_msgpack = msgpack.packb(event, use_bin_type=True)
         udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-    elif msg == 513:
-        event = {
-            'type': "Pressed",
-            'button': "Button.left"
-        }
-        print(f'鼠标左键按下')
-        event_msgpack = msgpack.packb(event, use_bin_type=True)
-        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        mouse_listener.suppress_event()
-    elif msg == 514:
-        event = {
-            'type': "Release",
-            'button': "Button.left"
-        }
-        event_msgpack = msgpack.packb(event, use_bin_type=True)
-        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        print(f'鼠标左键抬起')
-        mouse_listener.suppress_event()
-    elif msg == 516:
-        event = {
-            'type': "Pressed",
-            'button': "Button.right"
-        }
-        print(f'鼠标右键按下')
-        event_msgpack = msgpack.packb(event, use_bin_type=True)
-        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        mouse_listener.suppress_event()
-    elif msg == 517:
-        event = {
-            'type': "Release",
-            'button': "Button.right"
-        }
-        print(f'鼠标右键抬起')
-        event_msgpack = msgpack.packb(event, use_bin_type=True)
-        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        mouse_listener.suppress_event()
-    elif msg == 519:
-        event = {
-            'type': "Pressed",
-            'button': "Button.middle"
-        }
-        print(f'鼠标中键按下')
-        event_msgpack = msgpack.packb(event, use_bin_type=True)
-        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        mouse_listener.suppress_event()
-    elif msg == 520:
-        event = {
-            'type': "Release",
-            'button': "Button.middle"
-        }
-        print(f'鼠标中键抬起')
-        event_msgpack = msgpack.packb(event, use_bin_type=True)
-        udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        mouse_listener.suppress_event()
-    elif msg == 522:
-        if data.mouseData == 4287102976:
-            event = {
-                'type': 'Scroll',
-                'dx': 0,
-                'dy': -1
-            }
-            print(f'滚轮向下')
-            event_msgpack = msgpack.packb(event, use_bin_type=True)
-            udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        elif data.mouseData == 7864320:
-            event = {
-                'type': 'Scroll',
-                'dx': 0,
-                'dy': 1
-            }
-            print(f'滚轮向上')
-            event_msgpack = msgpack.packb(event, use_bin_type=True)
-            udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        mouse_listener.suppress_event()
-    elif msg == 526:
-        if data.mouseData <= 15728640:
-            event = {
-                'type': 'Scroll',
-                'dx': 1,
-                'dy': 0
-            }
-            print(f'滚轮向左')
-            event_msgpack = msgpack.packb(event, use_bin_type=True)
-            udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        elif data.mouseData >= 4271374336:
-            event = {
-                'type': 'Scroll',
-                'dx': -1,
-                'dy': 0
-            }
-            print(f'滚轮向右')
-            event_msgpack = msgpack.packb(event, use_bin_type=True)
-            udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
-        mouse_listener.suppress_event()
-    else:  # 其他一律拦截
-        mouse_listener.suppress_event()
+        if event_type != 'Move':
+            mouse_listener.suppress_event()
+
+
+mouse_mapping = {
+    512: ('Move', None),
+    513: ('Pressed', 'Button.left'),
+    514: ('Release', 'Button.left'),
+    516: ('Pressed', 'Button.right'),
+    517: ('Release', 'Button.right'),
+    519: ('Pressed', 'Button.middle'),
+    520: ('Release', 'Button.middle'),
+    522: ('Scroll', 'column'),
+    526: ('Scroll', 'row'),
+}
+
 
 # 发送键盘按压事件
 def on_press(key):
-    global exit_program, cmd_press
-    if key == Key.esc and cmd_press:
+    global exit_program, cmd_press, esc_press
+
+    if key == Key.esc:
+        esc_press = True
+    elif key == Key.cmd:
+        cmd_press = True
+    else:
+        esc_press = False
+        cmd_press = False
+    if esc_press and cmd_press:
         event = {
             'type': 'Exit'
         }
@@ -161,10 +118,7 @@ def on_press(key):
         except AttributeError:
             key_char = str(key)  # 如果按键没有字符表示形式，将其转换为字符串
             key_type = 'special'
-        if key == Key.cmd:
-            cmd_press = True
-        else:
-            cmd_press = False
+
         event = {
             'type': 'Keyboard',
             'statue': 'pressed',
@@ -227,6 +181,7 @@ def receive_and_process_events(udp_socket):
 
                 if event['type'] == 'Exit':
                     print("程序退出")
+                    control2.release(Key.esc)
                     control2.release(Key.cmd)
                     time.sleep(1)
                     sys.exit(0)
@@ -299,6 +254,7 @@ def receive_and_process_events(udp_socket):
         pass
 
 
+# 特殊按键
 special_keys = {
     'Key.shift': Key.shift,
     'Key.shift_l': Key.shift_l,
@@ -348,12 +304,26 @@ special_keys = {
     'Key.menu': Key.menu
 }
 
+
+# 最小化窗口
+def minimize_console_window():
+    hwnd = win32console.GetConsoleWindow()
+    win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+
+
+# 将窗口尺寸恢复到最小化之前尺寸
+def restore_console_window():
+    hwnd = win32console.GetConsoleWindow()
+    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+
 # 主函数
 if __name__ == "__main__":
     choice = input("输入1为主控端，输入2为被控端:\n")
     if choice == "1":
         exit_program = False
         cmd_press = False
+        esc_press = False
         remote_ip = '192.168.56.134'  # 虚拟机
         # remote_ip = '172.31.110.236' # 本机
         # remote_ip = '172.31.110.64' # 笔记本
@@ -363,6 +333,8 @@ if __name__ == "__main__":
         event_capture_mouse = threading.Event()
         exit_event = threading.Event()
 
+        # 启动程序并最小化窗口，使用相对路径
+        minimize_console_window()
         # 创建UDP套接字
         udp_socket = create_mian_udp_socket(remote_ip, remote_port)
         try:
@@ -373,12 +345,13 @@ if __name__ == "__main__":
             # 启动监听线程
             mouse_listener.start()
             key_listener.start()
-            print(exit_program)
+            # print(exit_program)
             while True:
                 if exit_program:
                     mouse_listener.stop()
                     key_listener.stop()
-                    print("程序退出")
+                    restore_console_window()
+                    print("程序退出!")
                     time.sleep(1)
                     sys.exit(0)
 

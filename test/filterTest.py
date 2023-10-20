@@ -19,7 +19,7 @@ from pynput import mouse
 # 526: 鼠标左右滚轮滚动
 # 527:
 
-
+# 微软提供 MSLLHOOKSTRUCT api
 def win32_event_filter(msg, data):
     if msg == 512:  # 不抑制enter
         print(f'{data.pt.x} , {data.pt.y}')
