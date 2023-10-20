@@ -95,8 +95,16 @@ mouse_mapping = {
 
 # 发送键盘按压事件
 def on_press(key):
-    global exit_program, cmd_press
-    if key == Key.esc and cmd_press:
+    global exit_program, cmd_press, esc_press
+
+    if key == Key.esc:
+        esc_press = True
+    elif key == Key.cmd:
+        cmd_press = True
+    else:
+        esc_press = False
+        cmd_press = False
+    if esc_press and cmd_press:
         event = {
             'type': 'Exit'
         }
@@ -110,17 +118,14 @@ def on_press(key):
         except AttributeError:
             key_char = str(key)  # 如果按键没有字符表示形式，将其转换为字符串
             key_type = 'special'
-        if key == Key.cmd:
-            cmd_press = True
-        else:
-            cmd_press = False
+
         event = {
             'type': 'Keyboard',
             'statue': 'pressed',
             'keyType': key_type,
             'key': key_char
         }
-        # print('{0} 按下'.format(key_char))
+        print('{0} 按下'.format(key_char))
         event_msgpack = msgpack.packb(event, use_bin_type=True)
         udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
 
@@ -140,7 +145,7 @@ def on_release(key):
         'keyType': key_type,
         'key': key_char
     }
-    # print('{0} 松开'.format(key_char))
+    print('{0} 松开'.format(key_char))
     event_msgpack = msgpack.packb(event, use_bin_type=True)
     udp_socket.sendto(event_msgpack, (remote_ip, remote_port))
 
@@ -176,6 +181,7 @@ def receive_and_process_events(udp_socket):
 
                 if event['type'] == 'Exit':
                     print("程序退出")
+                    control2.release(Key.esc)
                     control2.release(Key.cmd)
                     time.sleep(1)
                     sys.exit(0)
@@ -317,6 +323,7 @@ if __name__ == "__main__":
     if choice == "1":
         exit_program = False
         cmd_press = False
+        esc_press = False
         remote_ip = '192.168.56.134'  # 虚拟机
         # remote_ip = '172.31.110.236' # 本机
         # remote_ip = '172.31.110.64' # 笔记本
