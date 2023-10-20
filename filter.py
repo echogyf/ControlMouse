@@ -1,4 +1,8 @@
 import socket
+
+import win32con
+import win32console
+import win32gui
 import sys
 import time
 
@@ -299,6 +303,7 @@ def receive_and_process_events(udp_socket):
         pass
 
 
+# 特殊按键
 special_keys = {
     'Key.shift': Key.shift,
     'Key.shift_l': Key.shift_l,
@@ -348,6 +353,19 @@ special_keys = {
     'Key.menu': Key.menu
 }
 
+
+# 最小化窗口
+def minimize_console_window():
+    hwnd = win32console.GetConsoleWindow()
+    win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+
+
+# 将窗口尺寸恢复到最小化之前尺寸
+def restore_console_window():
+    hwnd = win32console.GetConsoleWindow()
+    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+
 # 主函数
 if __name__ == "__main__":
     choice = input("输入1为主控端，输入2为被控端:\n")
@@ -363,6 +381,8 @@ if __name__ == "__main__":
         event_capture_mouse = threading.Event()
         exit_event = threading.Event()
 
+        # 启动程序并最小化窗口，使用相对路径
+        minimize_console_window()
         # 创建UDP套接字
         udp_socket = create_mian_udp_socket(remote_ip, remote_port)
         try:
@@ -373,12 +393,13 @@ if __name__ == "__main__":
             # 启动监听线程
             mouse_listener.start()
             key_listener.start()
-            print(exit_program)
+            # print(exit_program)
             while True:
                 if exit_program:
                     mouse_listener.stop()
                     key_listener.stop()
-                    print("程序退出")
+                    restore_console_window()
+                    print("程序退出!")
                     time.sleep(1)
                     sys.exit(0)
 
